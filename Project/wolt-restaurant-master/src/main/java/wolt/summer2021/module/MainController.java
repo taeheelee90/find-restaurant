@@ -22,8 +22,12 @@ public class MainController {
 	@GetMapping("/")
 	public String main(Model model) {
 		User user = userService.getUserLocation();
-		List<Restaurant> restaurants = restaurantService.restaurantsInMyArea(user);
-		model.addAttribute("restaurants", restaurants);
+		System.out.println("UserLat: " + user.getLat());
+		System.out.println("UserLon: " + user.getLon());
+		List<Restaurant> popularRestaurants = restaurantService.popularList(user.getLon(), user.getLat());
+		List<Restaurant> newRestaurants = restaurantService.newList(user.getLon(), user.getLat());
+		List<Restaurant> closeRestaurants = restaurantService.nearByList(user.getLon(), user.getLat());
+		model.addAttribute("restaurants", closeRestaurants);
 		return "restaurants";
 
 	}

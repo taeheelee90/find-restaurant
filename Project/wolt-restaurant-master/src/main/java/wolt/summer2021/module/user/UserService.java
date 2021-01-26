@@ -17,23 +17,26 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserService {
 
-	@Autowired private final HttpServletRequest request;
+	@Autowired
+	private final HttpServletRequest request;
 	private final RestTemplate restTemplate;
 
 	final String IP_RENDER_API = "http://ip-api.com/json/{query}?fields=lat,lon";
 
 	public User getUserLocation() {
-		
-		// Get user IP address 
-		String userIP = "94.237.113.214";// request.getRemoteAddr();		
 
-		// Render User IP address to location using Ip-api.com API
+		// Get user IP address
+		String userIP = "94.237.113.214";// request.getRemoteAddr();
+
+		// Covert user IP address to location
 		String IP_RENDER_API = "http://ip-api.com/json/" + userIP + "?fields=lat,lon";
+
+		// No HttpEntity explicitly required to use ip-api.com
 		HttpHeaders headers = new HttpHeaders();
 		HttpEntity<String> entity = new HttpEntity<>(headers);
-		
+
 		User user = restTemplate.exchange(IP_RENDER_API, HttpMethod.GET, entity, User.class).getBody();
-	
+
 		return user;
 	}
 }

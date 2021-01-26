@@ -8,13 +8,13 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class AppConfig {
 	
-	// DELETE: NOT IN USE
+	// Used in UserService: convert IP to coordinate
 	@Bean
 	public RestTemplate restTemplate() {
 		return new RestTemplate();
 	}
 
-	// FOR TEST: MAP JSON to OBJECT
+	// Used in RestaurantService: RestaurantVO to Restaurant
 	@Bean
 	public ModelMapper modelMapper() {
 		ModelMapper modelMapper = new ModelMapper();
