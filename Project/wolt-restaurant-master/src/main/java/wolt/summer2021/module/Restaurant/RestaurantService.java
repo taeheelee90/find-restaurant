@@ -28,100 +28,130 @@ public class RestaurantService {
 	private final ModelMapper modelMapper;
 	private final RestaurantRepository repository;
 
+	// Automatically retrieve restaurant data from provided 'restaurants.json' file
+	// to DB
 	@PostConstruct
 	public void initRestaurantData() throws IOException {
+		// 1. Read data from file
 		File resource = new ClassPathResource("restaurants.json").getFile();
 		String restaurants = new String(Files.readAllBytes(resource.toPath()));
+
+		// 2. Deserialize JSON content to RestaurantVO class
 		RestaurantVO restaurantVO = objectMapper.readValue(restaurants, RestaurantVO.class);
 
+		// 3. Save restaurant data to DB
 		RestaurantData[] restaurantData = restaurantVO.getRestaurants();
-
 		for (RestaurantData data : restaurantData) {
 			Restaurant restaurant = modelMapper.map(data, Restaurant.class);
 			restaurant.setLongitude(data.getLocation().get(0));
 			restaurant.setLatitude(data.getLocation().get(1));
 			repository.save(restaurant);
 		}
-
+		// For TEST
 		System.out.println("Data saved.");
 
 	}
 
-	public List<Restaurant> showRestaurants() {
-		return repository.findAll();
+	// FOR TEST: Return final lists to request
+	public List<Restaurant> restaurantsInMyArea(User user) {
+		// 1. Get user location
+		final double userLon = user.getLon();
+		final double userLat = user.getLat();
+
+		List<Restaurant> popularRestaurants = popularList(userLon, userLat);
+		List<Restaurant> newRestaurants = newList(userLon, userLat);
+		List<Restaurant> nearByRestaurants = nearByList(userLon, userLat);
+
+		return popularRestaurants;
+
 	}
 
-	public void restaurantsInMyArea(User user) {
-		final double longitude = user.getLon();
-		final double latitude = user.getLat();
+	// Return 10 popular restaurants in descending order
+	private List<Restaurant> popularList(double userLon, double userLat) {
+		List<Restaurant> restaurants = repository.findByOnlineOrderByPopularityDesc(true);
 
-		List<Restaurant> restaurants = repository.findAll();
-		List<Restaurant> restaurantsInMyArea = new ArrayList<>();
+		// Remove too far (>1.5km) restaurants
+		List<Restaurant> toRemove = new ArrayList();
+		// DELETE
+		System.out.println("Popular-first size" + restaurants.size());
+
 		for (Restaurant r : restaurants) {
-			double distance = calcDistance(latitude, longitude, r.getLatitude(), r.getLongitude());
-			if (distance <= 1.5) {
-				restaurantsInMyArea.add(r);
+			if (calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()) >= 1.5) {
+				System.out.println(calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()));
+				toRemove.add(r);
 			}
 		}
+		// DELETE
+		System.out.println("Popular-to remove " + toRemove.size());
+		restaurants.removeAll(toRemove);
+		// DELETE
+		System.out.println("Popular-after remove " + restaurants.size());
+		// ToDO: limit size
+		return restaurants;
+	}
 
-		showFinalList(restaurantsInMyArea);
-		
-		System.out.println(restaurantsInMyArea.size());
-		for(Restaurant r : restaurantsInMyArea) {
-			
-			System.out.println(r.getName());
-			System.out.println(r.getPopularity());
-			System.out.println(r.getLatitude());
-			System.out.println(r.getLongitude());
-			System.out.println(r.getLaunch_date());
-			System.out.println("============================================");
-		
+	// Return 10 newest restaurants in descending order
+	private List<Restaurant> newList(double userLon, double userLat) {
+		List<Restaurant> restaurants = repository.findByOnlineOrderByLaunchDateDesc(true);
+
+		// Remove restaurants launched more than 4 months ago.
+		restaurants.removeIf(r -> r.opendFourMonthsAgo());
+
+		// Remove too far (>1.5km) restaurants
+		List<Restaurant> toRemove = new ArrayList();
+		// DELETE
+		System.out.println("New-first size" + restaurants.size());
+		for (Restaurant r : restaurants) {
+			if (calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()) >= 1.5) {
+				System.out.println(calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()));
+				toRemove.add(r);
+			}
 		}
-		System.out.println(restaurantsInMyArea);
+		// DELETE
+		System.out.println("New-to remove " + toRemove.size());
+		restaurants.removeAll(toRemove);
+		// DELETE
+		System.out.println("New-after remove " + restaurants.size());
+		// ToDO: limit size
+		return restaurants;
+
 	}
 
-	private void showFinalList(List<Restaurant> restaurantsInMyArea) {
-		/*
-		 * “Popular Restaurants”: highest popularity value first (descending order) 
-		 * “New Restaurants”: Newest launch_date first (descending). This list has also a special rule: 
-		 * launch_date must be no older than 4 months. 
-		 * “Nearby Restaurants”: Closest to the given location first (ascending).
-		 * 
-		 */
-		popularList(restaurantsInMyArea);
-		newList(restaurantsInMyArea);
-		nearByList(restaurantsInMyArea);
-	}
-
-	private void newList(List<Restaurant> restaurantsInMyArea) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void nearByList(List<Restaurant> restaurantsInMyArea) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private void popularList(List<Restaurant> restaurantsInMyArea) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	private double calcDistance(double userLat, double userLong, double restaurantLat, double restaurantLong) {
-		if ((userLat == restaurantLat) && (userLong == restaurantLong)) {
-			return 0;
-		} else {
-			double theta = userLong - restaurantLong;
-			double dist = Math.sin(Math.toRadians(userLat)) * Math.sin(Math.toRadians(restaurantLat))
-					+ Math.cos(Math.toRadians(userLat)) * Math.cos(Math.toRadians(restaurantLat))
-							* Math.cos(Math.toRadians(theta));
-			dist = Math.acos(dist);
-			dist = Math.toDegrees(dist);
-			dist = dist * 60 * 1.1515 * 1.609344;
-
-			return (dist);
+	// Return 10 newest restaurants in ascending order
+	private List<Restaurant> nearByList(double userLon, double userLat) {
+		List<Restaurant> restaurants = repository.findByOnline(true);
+		// Remove too far (>1.5km) restaurants
+		List<Restaurant> toRemove = new ArrayList();
+		// DELETE
+		System.out.println("Near-first size" + restaurants.size());
+		for (Restaurant r : restaurants) {
+			if (calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()) >= 1.5) {
+				System.out.println(calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()));
+				toRemove.add(r);
+			}
 		}
+		// DELETE
+		System.out.println("Near-to remove " + toRemove.size());
+		restaurants.removeAll(toRemove);
+		// DELETE
+		System.out.println("Near-after remove " + restaurants.size());
+		
+		// ToDo: Make order & limit size
+		return restaurants;
+
+	}
+
+	// Calculate distance between User location and Restaurant 
+	private double calcDistance(double userLong, double userLat, double restaurantLong, double restaurantLat) {
+
+		userLat = Math.toRadians(userLat);
+		userLong = Math.toRadians(userLong);
+		restaurantLat = Math.toRadians(restaurantLat);
+		restaurantLong = Math.toRadians(restaurantLong);
+
+		double earthRadius = 6371.01; // for KM
+		return earthRadius * Math.acos(Math.sin(userLat) * Math.sin(restaurantLat)
+				+ Math.cos(userLat) * Math.cos(restaurantLat) * Math.cos(userLong - restaurantLong));
 	}
 
 }

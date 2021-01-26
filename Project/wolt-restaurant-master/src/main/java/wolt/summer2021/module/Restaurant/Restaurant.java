@@ -1,6 +1,8 @@
 package wolt.summer2021.module.Restaurant;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -34,9 +36,35 @@ public class Restaurant {
 
 	private double popularity;
 
-	private LocalDate launch_date;
+	private LocalDate launchDate;
 
 	private double longitude;
 
 	private double latitude;
+	
+	public boolean opendFourMonthsAgo() {
+		return this.launchDate.isBefore(LocalDate.now().minusMonths(4));
+	}
+	/*
+	public boolean isTooFar() {
+		calcDistance this.getLatitude()
+		return return this.;
+	}
+	
+	
+	List<Restaurant> restaurantsInMyArea = new ArrayList<>();
+
+		// Include only restaurants within 1.5km from user location
+		for (Restaurant r : restaurants) {
+			double distance = calcDistance(userLon, userLat, r.getLatitude(), r.getLongitude());
+			if (distance <= 1.5) {
+				restaurantsInMyArea.add(r);
+			}
+		}
+		System.out.println(restaurantsInMyArea);
+	 * 
+	 * 
+	 * */
+
+	
 }

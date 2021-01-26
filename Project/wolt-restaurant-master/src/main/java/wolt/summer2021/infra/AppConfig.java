@@ -8,11 +8,13 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class AppConfig {
 	
+	// DELETE: NOT IN USE
 	@Bean
 	public RestTemplate restTemplate() {
 		return new RestTemplate();
 	}
 
+	// FOR TEST: MAP JSON to OBJECT
 	@Bean
 	public ModelMapper modelMapper() {
 		ModelMapper modelMapper = new ModelMapper();

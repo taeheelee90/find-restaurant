@@ -8,5 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
+	List<Restaurant> findByOnlineOrderByPopularityDesc(boolean online);
+	
+	List<Restaurant> findByOnlineOrderByLaunchDateDesc(boolean online);
+
+	List<Restaurant> findByOnline(boolean online);
 
 }
