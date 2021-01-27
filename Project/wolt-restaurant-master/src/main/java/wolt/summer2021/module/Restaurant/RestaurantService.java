@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -47,9 +47,6 @@ public class RestaurantService {
 			restaurant.setLatitude(data.getLocation().get(1));
 			repository.save(restaurant);
 		}
-		// For TEST
-		System.out.println("Data saved.");
-
 	}
 
 	// FOR TEST: Return final lists to request
@@ -70,6 +67,7 @@ public class RestaurantService {
 	public List<Restaurant> popularList(double userLon, double userLat) {
 		List<Restaurant> restaurants = repository.findByOnlineOrderByPopularityDesc(true);
 		restaurants = removeTooFarRestaurants(restaurants, userLon, userLat);
+
 		if (restaurants.size() > 10) {
 			restaurants = limitSizeToTen(restaurants);
 		}
@@ -95,29 +93,46 @@ public class RestaurantService {
 	public List<Restaurant> nearByList(double userLon, double userLat) {
 		List<Restaurant> restaurants = repository.findByOnline(true);
 		restaurants = removeTooFarRestaurants(restaurants, userLon, userLat);
-		System.out.println("Near after remove too far: " + restaurants.size());
+
 		if (restaurants.size() > 10) {
 			restaurants = limitSizeToTen(restaurants);
 		}
-		System.out.println("Near limited size: " + restaurants.size());
 
-		// ToDo: Make order
-		/*
-		 * list.sort((o1, o2) -> Integer.compare(o1.length(), o2.length()));
-		 * list.sort(Comparator.comparingInt(String::length));
-		 * 
-		 */
+		restaurants = orderByDistance(restaurants, userLon, userLat);
 
+		return restaurants;
+	}
+
+	// Order NearBy Restaurants by distance
+	private List<Restaurant> orderByDistance(List<Restaurant> restaurants, double userLon, double userLat) {
+		for (Restaurant r : restaurants) {
+			double orgDistance = calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude());
+			System.out.println("orgDistance: " + orgDistance + " " + r.getName());
+		}
+
+		for (int i = 0; i < restaurants.size() - 1; i++) {
+			for (int j = 1; j < restaurants.size(); j++) {
+				double d1 = calcDistance(userLon, userLat, restaurants.get(j - 1).getLongitude(),
+						restaurants.get(j - 1).getLatitude());
+				double d2 = calcDistance(userLon, userLat, restaurants.get(j).getLongitude(),
+						restaurants.get(j).getLatitude());
+				{
+					if (d1 > d2) {
+						Collections.swap(restaurants, j - 1, j);
+
+					}
+				}
+			}
+		}
 		return restaurants;
 	}
 
 	// Limit the size of list to 10 restaurants
 	private List<Restaurant> limitSizeToTen(List<Restaurant> restaurants) {
-		List<Restaurant> toRemove = new ArrayList();
+		List<Restaurant> toRemove = new ArrayList<>();
 		for (Restaurant r : restaurants) {
 			if (restaurants.indexOf(r) >= 10) {
 				toRemove.add(r);
-				System.out.println(r.getName());
 			}
 		}
 		restaurants.removeAll(toRemove);
@@ -126,7 +141,7 @@ public class RestaurantService {
 
 	// Remove restaurants located too far from user
 	private List<Restaurant> removeTooFarRestaurants(List<Restaurant> restaurants, double userLon, double userLat) {
-		List<Restaurant> toRemove = new ArrayList();
+		List<Restaurant> toRemove = new ArrayList<>();
 
 		for (Restaurant r : restaurants) {
 			if (calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()) >= 1.5) {
