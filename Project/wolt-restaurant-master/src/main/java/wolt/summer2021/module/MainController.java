@@ -27,7 +27,7 @@ public class MainController {
 		List<Restaurant> popularRestaurants = restaurantService.popularList(user.getLon(), user.getLat());
 		List<Restaurant> newRestaurants = restaurantService.newList(user.getLon(), user.getLat());
 		List<Restaurant> closeRestaurants = restaurantService.nearByList(user.getLon(), user.getLat());
-		model.addAttribute("restaurants", closeRestaurants);
+		model.addAttribute("restaurants", popularRestaurants);
 		return "restaurants";
 
 	}

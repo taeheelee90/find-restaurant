@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -65,76 +66,76 @@ public class RestaurantService {
 
 	}
 
-	// Return 10 popular restaurants in descending order
+	// Return 10 popular restaurants in descending order - DONE!!
 	public List<Restaurant> popularList(double userLon, double userLat) {
 		List<Restaurant> restaurants = repository.findByOnlineOrderByPopularityDesc(true);
-
-		// Remove too far (>1.5km) restaurants
-		List<Restaurant> toRemove = new ArrayList();
-		// DELETE
-		System.out.println("Popular-first size" + restaurants.size());
-
-		for (Restaurant r : restaurants) {
-			if (calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()) >= 1.5) {		
-				toRemove.add(r);
-			}
+		restaurants = removeTooFarRestaurants(restaurants, userLon, userLat);
+		if (restaurants.size() > 10) {
+			restaurants = limitSizeToTen(restaurants);
 		}
-		// DELETE
-		System.out.println("Popular-to remove " + toRemove.size());
-		restaurants.removeAll(toRemove);
-		// DELETE
-		System.out.println("Popular-after remove " + restaurants.size());
-		// ToDO: limit size
 		return restaurants;
 	}
 
-	// Return 10 newest restaurants in descending order
+	// Return 10 newest restaurants in descending order - DONE!!
 	public List<Restaurant> newList(double userLon, double userLat) {
+
 		List<Restaurant> restaurants = repository.findByOnlineOrderByLaunchDateDesc(true);
+		restaurants = removeTooFarRestaurants(restaurants, userLon, userLat);
 
 		// Remove restaurants launched more than 4 months ago.
 		restaurants.removeIf(r -> r.opendFourMonthsAgo());
 
-		// Remove too far (>1.5km) restaurants
-		List<Restaurant> toRemove = new ArrayList();
-		// DELETE
-		System.out.println("New-first size" + restaurants.size());
-		for (Restaurant r : restaurants) {
-			if (calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()) >= 1.5) {
-				toRemove.add(r);
-			}
+		if (restaurants.size() > 10) {
+			restaurants = limitSizeToTen(restaurants);
 		}
-		// DELETE
-		System.out.println("New-to remove " + toRemove.size());
-		restaurants.removeAll(toRemove);
-		// DELETE
-		System.out.println("New-after remove " + restaurants.size());
-		// ToDO: limit size
 		return restaurants;
-
 	}
 
 	// Return 10 newest restaurants in ascending order
 	public List<Restaurant> nearByList(double userLon, double userLat) {
 		List<Restaurant> restaurants = repository.findByOnline(true);
-		// Remove too far (>1.5km) restaurants
+		restaurants = removeTooFarRestaurants(restaurants, userLon, userLat);
+		System.out.println("Near after remove too far: " + restaurants.size());
+		if (restaurants.size() > 10) {
+			restaurants = limitSizeToTen(restaurants);
+		}
+		System.out.println("Near limited size: " + restaurants.size());
+
+		// ToDo: Make order
+		/*
+		 * list.sort((o1, o2) -> Integer.compare(o1.length(), o2.length()));
+		 * list.sort(Comparator.comparingInt(String::length));
+		 * 
+		 */
+
+		return restaurants;
+	}
+
+	// Limit the size of list to 10 restaurants
+	private List<Restaurant> limitSizeToTen(List<Restaurant> restaurants) {
 		List<Restaurant> toRemove = new ArrayList();
-		// DELETE
-		System.out.println("Near-first size" + restaurants.size());
+		for (Restaurant r : restaurants) {
+			if (restaurants.indexOf(r) >= 10) {
+				toRemove.add(r);
+				System.out.println(r.getName());
+			}
+		}
+		restaurants.removeAll(toRemove);
+		return restaurants;
+	}
+
+	// Remove restaurants located too far from user
+	private List<Restaurant> removeTooFarRestaurants(List<Restaurant> restaurants, double userLon, double userLat) {
+		List<Restaurant> toRemove = new ArrayList();
+
 		for (Restaurant r : restaurants) {
 			if (calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude()) >= 1.5) {
 				toRemove.add(r);
 			}
 		}
-		// DELETE
-		System.out.println("Near-to remove " + toRemove.size());
 		restaurants.removeAll(toRemove);
-		// DELETE
-		System.out.println("Near-after remove " + restaurants.size());
 
-		// ToDo: Make order & limit size
 		return restaurants;
-
 	}
 
 	// Calculate distance between User location and Restaurant
