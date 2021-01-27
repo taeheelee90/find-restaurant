@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -49,17 +50,55 @@ public class RestaurantService {
 		}
 	}
 
-	// FOR TEST: Return final lists to request
-	public List<Restaurant> restaurantsInMyArea(User user) {
+	// TO DO : Return final lists
+	public List<RestaurantVO> restaurantsInMyArea(User user) {
 		// 1. Get user location
 		final double userLon = user.getLon();
 		final double userLat = user.getLat();
 
+		// 2. Make 3 different lists
 		List<Restaurant> popularRestaurants = popularList(userLon, userLat);
 		List<Restaurant> newRestaurants = newList(userLon, userLat);
 		List<Restaurant> nearByRestaurants = nearByList(userLon, userLat);
 
-		return popularRestaurants;
+		// 3. Formatting
+		List<RestaurantVO> discovery = new ArrayList<>();
+
+		RestaurantData[] populars = new RestaurantData[10];
+
+		RestaurantVO vo1 = new RestaurantVO();
+		vo1.setTitle("Popular Restaurants");
+		for (Restaurant r : popularRestaurants) {
+			RestaurantData data = modelMapper.map(r, RestaurantData.class);
+			data.getLocation().add(r.getLongitude());
+			data.getLocation().add(r.getLatitude());
+			vo1.getRestaurants()[popularRestaurants.indexOf(r)] = data;
+		}
+		discovery.add(vo1);
+
+		RestaurantData[] news = new RestaurantData[10];
+		RestaurantVO vo2 = new RestaurantVO();
+		vo2.setTitle("New Restaurants");
+		for (Restaurant r : newRestaurants) {
+			RestaurantData data = modelMapper.map(r, RestaurantData.class);
+			data.getLocation().add(r.getLongitude());
+			data.getLocation().add(r.getLatitude());
+			vo2.getRestaurants()[newRestaurants.indexOf(r)] = data;
+		}
+		discovery.add(vo2);
+
+		RestaurantData[] nearBys = new RestaurantData[10];
+		RestaurantVO vo3 = new RestaurantVO();
+		vo3.setTitle("Nearby Restaurants");
+		for (Restaurant r : nearByRestaurants) {
+			RestaurantData data = modelMapper.map(r, RestaurantData.class);
+			data.getLocation().add(r.getLongitude());
+			data.getLocation().add(r.getLatitude());
+			vo3.getRestaurants()[nearByRestaurants.indexOf(r)] = data;
+		}		
+		discovery.add(vo3);
+
+		return discovery;
 
 	}
 
@@ -107,7 +146,7 @@ public class RestaurantService {
 	private List<Restaurant> orderByDistance(List<Restaurant> restaurants, double userLon, double userLat) {
 		for (Restaurant r : restaurants) {
 			double orgDistance = calcDistance(userLon, userLat, r.getLongitude(), r.getLatitude());
-			System.out.println("orgDistance: " + orgDistance + " " + r.getName());
+
 		}
 
 		for (int i = 0; i < restaurants.size() - 1; i++) {
